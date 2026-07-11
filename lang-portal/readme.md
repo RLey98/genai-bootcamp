@@ -88,32 +88,64 @@ Nothing is fixed on the model side yet; the goal is to keep the design portable 
 
 ### Infrastructure & Scalability
 
-_Pending._
+The infrastructure follows a hybrid approach: it starts local for prototyping and moves to the cloud as demand grows, so we only pay for scale once the workflows prove out. This keeps early costs low while leaving a clear path to handle the full student base.
+
+**Modular and containerized.** Each workflow and its supporting pieces (model access, retrieval, guardrails) run as independent, containerized components. This lets us update, replace, or scale one part without touching the rest, and keeps the door open to swapping models or providers later.
+
+**Scaling and future-proofing.** Compute scales horizontally in the cloud as traffic increases, while retrieval and caching absorb repeated requests to keep load and cost down. Models and data are versioned so we can roll forward to better options or roll back safely, keeping the design ready for future growth without a rewrite.
 
 ### Integration, Deployment & Monitoring
 
-_Pending._
+The suite is built to plug into what the school already runs. We integrate with the existing Lang Portal and Learning Record Store through their APIs and expose each workflow as a service, so the new tools connect to the current platform without forcing a rewrite of the base system.
+
+**Deployment.** Workflows ship as containerized services behind clean APIs, deployed through CI/CD pipelines so models and apps can be updated or rolled back with minimal disruption. This keeps releases predictable and compatible with the legacy platform.
+
+**Monitoring and optimization.** We track usage and model behavior through logging and telemetry, and define KPIs to measure real learning impact rather than raw traffic. Feedback loops feed observed weak spots back into prompts, retrieval, and model choice, and billing alerts watch cloud usage over time to keep spend under control.
 
 ### Governance & Security
 
-_Pending._
+Governance rests on the privacy commitments set earlier: student data stays on the local network, is never shared with third parties, and is never used to train external models, backed by clear opt-out and responsible-use policies.
+
+**Access and data protection.** Access is role-based, separating what teachers and students can see and do, and sensitive records are protected in line with the school's privacy requirements. This keeps user data controlled even as workflows run in the cloud.
+
+**Guardrails and sandboxing.** Input guardrails filter malicious or off-topic requests and block prompt injection, while output guardrails keep responses safe and grounded in approved material. Any workflow that executes code or agent actions runs inside isolated, sandboxed containers, so untrusted execution can never reach the wider system.
 
 ## 2. Business Considerations
 
 ### Use Cases
 
-_Pending._
+The core business problem is retention: students lose momentum between instructor-led classes. The suite addresses this by giving them guided, self-directed practice that keeps them engaged until the next session, with the expected outcome of better retention and steadier progress without adding teacher workload.
+
+Each app maps to a concrete learning need:
+
+- **Pronunciation Practice:** students rehearse speaking and get feedback, an area hard to practice alone.
+- **Sentence Construction:** learners build correct sentences and receive grammatical guidance.
+- **Typing Practice:** fast, accurate typing in Japanese to reinforce writing and character recognition.
+- **Text-Based Adventure Immersion:** an interactive story that drives immersion and vocabulary use in context.
+- **Movie to Vocabulary Tool:** extracts vocabulary from movie material so students learn from content they enjoy.
+
+All five draw on the same approved school material, so the practice stays consistent with what is taught in class.
 
 ### Complexity, Cost & Lock-in
 
-_Pending._
+**Complexity.** Adding GenAI brings several moving parts beyond a single model: retrieval, caching, guardrails, and monitoring all work together. This is not a set-and-forget system; it needs people to watch performance, review outputs, and adjust as usage grows, though the modular design keeps that maintenance manageable.
+
+**Cost.** The main cost levers are easy to read at a glance: the size of the models and servers we run, and the volume of calls made to them. We keep spend predictable by using mid-sized models, paying only for cloud scale as demand grows, and letting caching absorb repeated requests so we avoid unnecessary model calls.
+
+**Lock-in.** To avoid being tied to one vendor, we favor open-weight models and a portable architecture that abstracts model access. This lets us move to a better or cheaper model without reworking the system, protecting us from rising prices or a provider changing terms.
 
 ### Production Essentials
 
-_Pending._
+Before any workflow reaches students, three components are non-negotiable for production: guardrails, evaluations, and sandboxing.
+
+**Evaluations** are the piece we lean on most here: every workflow is tested against real tasks to confirm it stays grounded, teaches correct Japanese, and behaves as expected, and that testing continues in production so quality does not drift over time. **Guardrails** filter unsafe or off-topic input and output, and **sandboxing** isolates any code or agent execution, both as covered in Governance & Security. Together they form the readiness checklist that gates a workflow from prototype to production.
 
 ## 3. LLM-Specific Notes
 
 ### Abstract Model Access, Caches & Agents
 
-_Pending._
+**Abstract Model Access.** All model calls go through a single abstraction layer instead of being wired directly into each app. This standardizes how workflows request inference and lets us switch models or providers by changing one layer, reinforcing the portable, no-lock-in design.
+
+**Caches.** A caching strategy sits in front of the models to cut cost and latency. Common prompts and their responses are cached so repeated or near-identical requests are served without a fresh model call, with invalidation rules to refresh entries when the underlying material changes. Higher cache hit rates directly lower spend.
+
+**Agents.** Some workflows act as agents that take actions on the student's behalf. We separate read-only actions (vector search, database queries, web search) from write actions (updating progress, sending notifications), so anything that changes state is explicit and controlled. Agent execution stays within the guardrails and sandboxing already defined.
